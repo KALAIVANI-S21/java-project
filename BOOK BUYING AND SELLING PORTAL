@@ -1,0 +1,306 @@
+import java.awt.*;
+import java.util.ArrayList;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+
+public class OnlineBookPortalWithImagesAndFallback {
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(LoginPage::new);
+    }
+}
+
+// Login Page Class
+class LoginPage extends JFrame {
+    public LoginPage() {
+        setTitle("Login");
+        setSize(400, 300);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLayout(new GridLayout(3, 2));
+
+        JLabel usernameLabel = new JLabel("Username:");
+        JTextField usernameField = new JTextField();
+        JLabel passwordLabel = new JLabel("Password:");
+        JPasswordField passwordField = new JPasswordField();
+        JButton loginButton = new JButton("Login");
+
+        add(usernameLabel);
+        add(usernameField);
+        add(passwordLabel);
+        add(passwordField);
+        add(new JLabel());
+        add(loginButton);
+
+        loginButton.addActionListener(e -> {
+            String username = usernameField.getText();
+            String password = new String(passwordField.getPassword());
+
+            if (username.equals("kalai") && password.equals("kalai@2005")) {
+                JOptionPane.showMessageDialog(this, "Login Successful!");
+                dispose();
+                new ProductPage();
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid Credentials. Try Again.");
+            }
+        });
+
+        setVisible(true);
+    }
+}
+
+// Product Page Class
+class ProductPage extends JFrame {
+    private final ArrayList<Book> books = new ArrayList<>();
+    private final ArrayList<Book> cart = new ArrayList<>();
+    private final JTable bookTable;
+    private final DefaultTableModel tableModel;
+
+    public ProductPage() {
+        // Preload some books with images
+        books.add(new Book("The Great Gatsby", "F. Scott Fitzgerald", 10.99, "images/the Great Gatsby.jpg"));
+        books.add(new Book("1984", "George Orwell", 8.99, "images/1984.jpg"));
+        books.add(new Book("To Kill a Mockingbird", "Harper Lee", 12.50, "images/To Kill a Mockingbird.jpg"));
+        books.add(new Book("The art of being alone", "Ranuka Gavrani", 13.00, "images/The-Art-Of-Being-Alone.jpg"));
+        books.add(new Book("The art of not to overthink", "Shaurya Kapoor", 15.00, "images/the art of not to overthink.jpg"));
+
+        setTitle("Book Portal - Products");
+        setSize(800, 600);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        // Header
+        JLabel header = new JLabel("Available Books", JLabel.CENTER);
+        header.setFont(new Font("Arial", Font.BOLD, 24));
+        add(header, BorderLayout.NORTH);
+
+        // Table to display books
+        tableModel = new DefaultTableModel(new String[]{"Image", "Title", "Author", "Price ($)"}, 0);
+        bookTable = new JTable(tableModel) {
+            public Class<?> getColumnClass(int column) {
+                return (column == 0) ? Icon.class : Object.class;
+            }
+        };
+        refreshBookList(); // Populate table with initial data
+        JScrollPane scrollPane = new JScrollPane(bookTable);
+        add(scrollPane, BorderLayout.CENTER);
+
+        // Buttons Panel
+        JPanel buttonPanel = new JPanel();
+        JButton sellBookButton = new JButton("Sell Book");
+        JButton addBookButton = new JButton("Add Book");
+        JButton addToCartButton = new JButton("Add to Cart");
+        JButton viewCartButton = new JButton("View Cart");
+        JButton searchButton = new JButton("Search Book");
+        JButton deleteButton = new JButton("Delete");
+        JButton logoutButton = new JButton("Logout");
+
+        buttonPanel.add(addBookButton);
+        buttonPanel.add(sellBookButton);
+        buttonPanel.add(addToCartButton);
+        buttonPanel.add(viewCartButton);
+        buttonPanel.add(searchButton);
+        buttonPanel.add(deleteButton);
+        buttonPanel.add(logoutButton);
+
+        add(buttonPanel, BorderLayout.SOUTH);
+
+        // Button Actions
+        addBookButton.addActionListener(e -> openAddBookDialog());
+        sellBookButton.addActionListener(e -> openSellBookDialog());
+        addToCartButton.addActionListener(e -> addSelectedBookToCart());
+        viewCartButton.addActionListener(e -> new CartPage(cart));
+        searchButton.addActionListener(e -> openSearchDialog());
+        deleteButton.addActionListener(e -> deleteSelectedBook());
+        logoutButton.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Logged out successfully!");
+            dispose();
+            new LoginPage();
+        });
+
+        setVisible(true);
+    }
+
+    // Method to open dialog for adding a new book
+    private void openAddBookDialog() {
+        JDialog addBookDialog = new JDialog(this, "Add Book", true);
+        addBookDialog.setLayout(new GridLayout(6, 2));
+        addBookDialog.setSize(400, 300);
+
+        JLabel titleLabel = new JLabel("Title:");
+        JTextField titleField = new JTextField();
+        JLabel authorLabel = new JLabel("Author:");
+        JTextField authorField = new JTextField();
+        JLabel priceLabel = new JLabel("Price ($):");
+        JTextField priceField = new JTextField();
+        JLabel imageLabel = new JLabel("Image Path:");
+        JTextField imagePathField = new JTextField();
+
+        JButton addButton = new JButton("Add");
+        addButton.addActionListener(e -> {
+            String title = titleField.getText();
+            String author = authorField.getText();
+            double price = Double.parseDouble(priceField.getText());
+            String imagePath = imagePathField.getText();
+            books.add(new Book(title, author, price, imagePath));
+            refreshBookList();
+            addBookDialog.dispose();
+        });
+
+        addBookDialog.add(titleLabel);
+        addBookDialog.add(titleField);
+        addBookDialog.add(authorLabel);
+        addBookDialog.add(authorField);
+        addBookDialog.add(priceLabel);
+        addBookDialog.add(priceField);
+        addBookDialog.add(imageLabel);
+        addBookDialog.add(imagePathField);
+        addBookDialog.add(new JLabel());
+        addBookDialog.add(addButton);
+
+        addBookDialog.setVisible(true);
+    }
+
+    // Method to open dialog for selling a book
+    private void openSellBookDialog() {
+        JDialog sellBookDialog = new JDialog(this, "Sell Book", true);
+        sellBookDialog.setLayout(new GridLayout(6, 2));
+        sellBookDialog.setSize(400, 300);
+
+        JLabel titleLabel = new JLabel("Title:");
+        JTextField titleField = new JTextField();
+        JLabel authorLabel = new JLabel("Author:");
+        JTextField authorField = new JTextField();
+        JLabel priceLabel = new JLabel("Price ($):");
+        JTextField priceField = new JTextField();
+        JLabel imageLabel = new JLabel("Image Path:");
+        JTextField imagePathField = new JTextField();
+
+        JButton sellButton = new JButton("Sell");
+        sellButton.addActionListener(e -> {
+            String title = titleField.getText();
+            String author = authorField.getText();
+            double price = Double.parseDouble(priceField.getText());
+            String imagePath = imagePathField.getText();
+            books.removeIf(book -> book.getTitle().equals(title)); // Remove sold book
+            refreshBookList();
+            sellBookDialog.dispose();
+        });
+
+        sellBookDialog.add(titleLabel);
+        sellBookDialog.add(titleField);
+        sellBookDialog.add(authorLabel);
+        sellBookDialog.add(authorField);
+        sellBookDialog.add(priceLabel);
+        sellBookDialog.add(priceField);
+        sellBookDialog.add(imageLabel);
+        sellBookDialog.add(imagePathField);
+        sellBookDialog.add(new JLabel());
+        sellBookDialog.add(sellButton);
+
+        sellBookDialog.setVisible(true);
+    }
+
+    // Method to open search dialog
+    private void openSearchDialog() {
+        String searchTitle = JOptionPane.showInputDialog(this, "Enter Book Title:");
+        boolean found = false;
+        for (Book book : books) {
+            if (book.getTitle().equalsIgnoreCase(searchTitle)) {
+                found = true;
+                JOptionPane.showMessageDialog(this, "Book Found: " + book.getTitle() + " by " + book.getAuthor());
+                break;
+            }
+        }
+        if (!found) {
+            JOptionPane.showMessageDialog(this, "Invalid Book Title! No matching book found.");
+        }
+    }
+
+    // Method to delete selected book
+    private void deleteSelectedBook() {
+        int selectedRow = bookTable.getSelectedRow();
+        if (selectedRow != -1) {
+            Book selectedBook = books.get(selectedRow);
+            books.remove(selectedBook);
+            refreshBookList();
+            JOptionPane.showMessageDialog(this, selectedBook.getTitle() + " has been deleted.");
+        } else {
+            JOptionPane.showMessageDialog(this, "Please select a book to delete.");
+        }
+    }
+
+    // Method to add the selected book to the cart
+    private void addSelectedBookToCart() {
+        int selectedRow = bookTable.getSelectedRow();
+        if (selectedRow != -1) {
+            Book selectedBook = books.get(selectedRow);
+            cart.add(selectedBook);
+            JOptionPane.showMessageDialog(this, selectedBook.getTitle() + " has been added to the cart!");
+        } else {
+            JOptionPane.showMessageDialog(this, "Please select a book to add to the cart.");
+        }
+    }
+
+    // Method to refresh the book list
+    private void refreshBookList() {
+        tableModel.setRowCount(0);
+        for (Book book : books) {
+            tableModel.addRow(new Object[]{new ImageIcon(book.getImagePath()), book.getTitle(), book.getAuthor(), book.getPrice()});
+        }
+    }
+}
+
+// Book Class to define the Book properties
+class Book {
+    private final String title;
+    private final String author;
+    private final double price;
+    private final String imagePath;
+
+    public Book(String title, String author, double price, String imagePath) {
+        this.title = title;
+        this.author = author;
+        this.price = price;
+        this.imagePath = imagePath;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public String getImagePath() {
+        return imagePath;
+    }
+}
+
+// CartPage Class
+class CartPage extends JFrame {
+    private final ArrayList<Book> cart;
+
+    public CartPage(ArrayList<Book> cart) {
+        this.cart = cart;
+        setTitle("Your Cart");
+        setSize(400, 300);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+
+        String[] columns = {"Title", "Author", "Price"};
+        String[][] data = new String[cart.size()][3];
+
+        for (int i = 0; i < cart.size(); i++) {
+            data[i][0] = cart.get(i).getTitle();
+            data[i][1] = cart.get(i).getAuthor();
+            data[i][2] = String.valueOf(cart.get(i).getPrice());
+        }
+
+        JTable cartTable = new JTable(data, columns);
+        add(new JScrollPane(cartTable), BorderLayout.CENTER);
+        setVisible(true);
+    }
+}
